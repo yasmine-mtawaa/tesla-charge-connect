@@ -1,23 +1,32 @@
 import { useState, useRef, useEffect } from "react";
-import { Mail, Phone, Plus, ShieldCheck, Loader2, CheckCircle2 } from "lucide-react";
+import { Mail, Phone, MessageCircle, ShieldCheck, Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
 
 interface VerificationStepProps {
   defaultEmail?: string;
   defaultPhone?: string;
   ownerName?: string;
   onComplete: () => void;
+  onBack?: () => void;
 }
 
-type Channel = "email" | "phone" | "custom";
+type Channel = "email" | "sms" | "whatsapp";
 type Phase = "select" | "code" | "verified";
 
-export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPhone = "+216 XX XXX XXX", ownerName = "Titulaire", onComplete }: VerificationStepProps) => {
+const SENDER_EMAIL = "yassmine.mtawa@gmail.com";
+
+export const VerificationStep = ({
+  defaultEmail = "client@tesla.com",
+  defaultPhone = "+216 XX XXX XXX",
+  ownerName = "Titulaire",
+  onComplete,
+  onBack,
+}: VerificationStepProps) => {
   const [channel, setChannel] = useState<Channel>("email");
-  const [customPhone, setCustomPhone] = useState("");
   const [phase, setPhase] = useState<Phase>("select");
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState("");
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const [countdown, setCountdown] = useState(0);
 
@@ -30,6 +39,8 @@ export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPho
 
   const sendCode = () => {
     setSending(true);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedCode(otp);
     setTimeout(() => {
       setSending(false);
       setPhase("code");
@@ -45,7 +56,7 @@ export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPho
     setCode(newCode);
     if (val && i < 5) inputsRef.current[i + 1]?.focus();
     if (newCode.every(c => c) && newCode.join('').length === 6) {
-      verifyCode(newCode.join(''));
+      verifyCode();
     }
   };
 
@@ -53,7 +64,7 @@ export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPho
     if (e.key === "Backspace" && !code[i] && i > 0) inputsRef.current[i - 1]?.focus();
   };
 
-  const verifyCode = (full: string) => {
+  const verifyCode = () => {
     setVerifying(true);
     setTimeout(() => {
       setVerifying(false);
@@ -62,7 +73,8 @@ export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPho
     }, 1500);
   };
 
-  const target = channel === "email" ? defaultEmail : channel === "phone" ? defaultPhone : customPhone;
+  const target = channel === "email" ? defaultEmail : defaultPhone;
+  const channelLabel = channel === "email" ? "email" : channel === "sms" ? "SMS" : "WhatsApp";
 
   if (phase === "verified") {
     return (
@@ -83,6 +95,15 @@ export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPho
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Retour à l'identification
+        </button>
+      )}
+
       <div className="text-center space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-primary/30">
           <ShieldCheck className="w-4 h-4 text-primary-glow" />
@@ -103,42 +124,32 @@ export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPho
             label="Email"
             value={defaultEmail}
             badge="Recommandé"
+            hint={`Envoyé depuis ${SENDER_EMAIL}`}
           />
           <ChannelOption
-            active={channel === "phone"}
-            onClick={() => setChannel("phone")}
+            active={channel === "sms"}
+            onClick={() => setChannel("sms")}
             icon={Phone}
-            label="Téléphone titulaire"
+            label="SMS"
             value={defaultPhone}
           />
-          <div>
-            <ChannelOption
-              active={channel === "custom"}
-              onClick={() => setChannel("custom")}
-              icon={Plus}
-              label="Autre numéro"
-              value={customPhone || "Saisir un nouveau numéro"}
-            />
-            {channel === "custom" && (
-              <input
-                value={customPhone}
-                onChange={e => setCustomPhone(e.target.value)}
-                placeholder="+216 XX XXX XXX"
-                autoFocus
-                className="w-full mt-3 px-4 py-3 rounded-xl bg-input/60 border border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono animate-fade-in"
-              />
-            )}
-          </div>
+          <ChannelOption
+            active={channel === "whatsapp"}
+            onClick={() => setChannel("whatsapp")}
+            icon={MessageCircle}
+            label="WhatsApp"
+            value={defaultPhone}
+          />
 
           <button
             onClick={sendCode}
-            disabled={sending || (channel === "custom" && !customPhone)}
+            disabled={sending}
             className="w-full py-3.5 rounded-xl bg-gradient-electric text-primary-foreground font-semibold shadow-electric disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
           >
             {sending ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours...</>
             ) : (
-              <>Envoyer le code de vérification</>
+              <>Envoyer le code par {channelLabel}</>
             )}
           </button>
         </div>
@@ -147,8 +158,19 @@ export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPho
       {phase === "code" && (
         <div className="glass border-gradient rounded-2xl p-8 space-y-6 animate-fade-in">
           <div className="text-center space-y-2">
-            <div className="text-sm text-muted-foreground">Code envoyé à</div>
+            <div className="text-sm text-muted-foreground">Code envoyé par {channelLabel} à</div>
             <div className="font-mono text-lg text-primary-glow">{target}</div>
+            {channel === "email" && (
+              <div className="text-xs text-muted-foreground font-mono">
+                Expéditeur : <span className="text-foreground">{SENDER_EMAIL}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Démo : afficher le code généré */}
+          <div className="glass rounded-xl p-3 border border-warning/30 text-center">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-warning mb-1">Mode démo · Code généré</div>
+            <div className="font-mono text-2xl font-bold text-primary-glow tracking-[0.3em]">{generatedCode}</div>
           </div>
 
           <div className="flex justify-center gap-2">
@@ -184,17 +206,13 @@ export const VerificationStep = ({ defaultEmail = "client@tesla.com", defaultPho
           </div>
 
           <button
-            onClick={() => setPhase("select")}
+            onClick={() => { setPhase("select"); setCode(["","","","","",""]); }}
             className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Changer de méthode d'envoi
           </button>
         </div>
       )}
-
-      <div className="text-xs text-center text-muted-foreground font-mono">
-        Démo : entrez n'importe quels 6 chiffres pour valider
-      </div>
     </div>
   );
 };
@@ -206,9 +224,10 @@ interface ChannelOptionProps {
   label: string;
   value: string;
   badge?: string;
+  hint?: string;
 }
 
-const ChannelOption = ({ active, onClick, icon: Icon, label, value, badge }: ChannelOptionProps) => (
+const ChannelOption = ({ active, onClick, icon: Icon, label, value, badge, hint }: ChannelOptionProps) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
@@ -228,6 +247,7 @@ const ChannelOption = ({ active, onClick, icon: Icon, label, value, badge }: Cha
         {badge && <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-success/20 text-success">{badge}</span>}
       </div>
       <div className="text-xs text-muted-foreground truncate font-mono">{value}</div>
+      {hint && <div className="text-[10px] text-muted-foreground/70 mt-0.5">{hint}</div>}
     </div>
     <div className={`w-5 h-5 rounded-full border-2 transition-all shrink-0 ${
       active ? 'border-primary bg-primary' : 'border-border'

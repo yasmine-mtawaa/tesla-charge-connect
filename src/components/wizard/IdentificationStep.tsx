@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, Loader2, CheckCircle2, Globe } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, Globe, ArrowLeft, ImageIcon, X } from "lucide-react";
 import carteGriseImg from "@/assets/carte-grise-sample.jpg";
 
 interface IdentificationStepProps {
   onComplete: (data: VehicleData) => void;
   onForeign: () => void;
+  onBack?: () => void;
 }
 
 export interface VehicleData {
@@ -13,53 +14,86 @@ export interface VehicleData {
   marque: string;
   modele: string;
   proprietaire: string;
+  email?: string;
 }
 
 type ScanStatus = "idle" | "scanning" | "extracting" | "done";
 
-export const IdentificationStep = ({ onComplete, onForeign }: IdentificationStepProps) => {
+export const IdentificationStep = ({ onComplete, onForeign, onBack }: IdentificationStepProps) => {
   const [status, setStatus] = useState<ScanStatus>("idle");
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [data, setData] = useState<VehicleData>({
     immatriculation: "",
     numChassis: "",
     marque: "Tesla",
     modele: "",
     proprietaire: "",
+    email: "",
   });
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const simulateOCR = () => {
+  const runOCR = (imageSrc: string) => {
+    setUploadedImage(imageSrc);
     setStatus("scanning");
     setTimeout(() => setStatus("extracting"), 1800);
     setTimeout(() => {
       setStatus("done");
-      setData({
+      setData(prev => ({
+        ...prev,
         immatriculation: "245 TUN 7821",
         numChassis: "5YJ3E1EA8KF317452",
         marque: "Tesla",
         modele: "Model 3 Long Range",
         proprietaire: "Mohamed Ben Ali",
-      });
+        email: prev.email || "mohamed.benali@gmail.com",
+      }));
     }, 3500);
   };
 
-  const canSubmit = data.immatriculation && data.numChassis && data.modele;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      runOCR((ev.target?.result as string) || carteGriseImg);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const resetScan = () => {
+    setStatus("idle");
+    setUploadedImage(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const useDemoSample = () => runOCR(carteGriseImg);
+
+  const canSubmit = data.immatriculation && data.numChassis && data.modele && data.email;
+  const displayImage = uploadedImage || carteGriseImg;
 
   return (
     <div className="grid lg:grid-cols-5 gap-8 max-w-6xl mx-auto">
       {/* Left - OCR Scanner */}
       <div className="lg:col-span-2 space-y-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Retour
+          </button>
+        )}
+
         <div className="space-y-2">
           <div className="text-xs font-mono uppercase tracking-wider text-primary-glow">01 · Scanner OCR</div>
           <h3 className="font-display text-2xl font-bold">Carte grise</h3>
-          <p className="text-sm text-muted-foreground">Numérisez votre carte grise pour remplissage automatique des champs.</p>
+          <p className="text-sm text-muted-foreground">Importez une photo depuis votre PC ou utilisez l'exemple démo.</p>
         </div>
 
         <div
-          onClick={() => status === "idle" && simulateOCR()}
-          className={`relative aspect-[4/3] rounded-2xl glass border-2 border-dashed overflow-hidden cursor-pointer transition-all ${
+          className={`relative aspect-[4/3] rounded-2xl glass border-2 border-dashed overflow-hidden transition-all ${
             status === "idle"
-              ? "border-border hover:border-primary/50 hover:bg-primary/5"
+              ? "border-border hover:border-primary/50"
               : "border-primary/60"
           } ${status === "scanning" ? "scan-overlay" : ""}`}
         >
@@ -69,18 +103,29 @@ export const IdentificationStep = ({ onComplete, onForeign }: IdentificationStep
                 <Upload className="w-6 h-6 text-primary-glow" />
               </div>
               <div>
-                <div className="font-medium">Cliquez pour scanner</div>
+                <div className="font-medium">Importer une photo</div>
                 <div className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF · max 10 MB</div>
               </div>
-              <button className="text-xs font-mono uppercase tracking-wider text-primary-glow border border-primary/30 rounded-full px-3 py-1 mt-2">
-                Démo OCR
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full mt-2">
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="flex-1 text-xs font-mono uppercase tracking-wider bg-gradient-electric text-primary-foreground rounded-full px-4 py-2 shadow-electric hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" /> Choisir un fichier
+                </button>
+                <button
+                  onClick={useDemoSample}
+                  className="flex-1 text-xs font-mono uppercase tracking-wider text-primary-glow border border-primary/30 rounded-full px-4 py-2 hover:bg-primary/5"
+                >
+                  Démo OCR
+                </button>
+              </div>
             </div>
           )}
 
           {status !== "idle" && (
             <>
-              <img src={carteGriseImg} alt="Carte grise" className="absolute inset-0 w-full h-full object-cover" loading="lazy" width={800} height={600} />
+              <img src={displayImage} alt="Carte grise" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
               <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px]" />
               {status === "extracting" && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -91,14 +136,22 @@ export const IdentificationStep = ({ onComplete, onForeign }: IdentificationStep
                 </div>
               )}
               {status === "done" && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="glass-strong rounded-xl px-4 py-3 flex items-center gap-3 border border-success/40">
-                    <CheckCircle2 className="w-5 h-5 text-success" />
-                    <span className="text-sm font-mono">Données extraites</span>
+                <>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="glass-strong rounded-xl px-4 py-3 flex items-center gap-3 border border-success/40">
+                      <CheckCircle2 className="w-5 h-5 text-success" />
+                      <span className="text-sm font-mono">Données extraites</span>
+                    </div>
                   </div>
-                </div>
+                  <button
+                    onClick={resetScan}
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full glass-strong flex items-center justify-center hover:bg-destructive/20 transition-colors"
+                    aria-label="Réinitialiser"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </>
               )}
-              {/* Corner brackets */}
               {status === "scanning" && (
                 <>
                   <span className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-primary-glow" />
@@ -109,7 +162,7 @@ export const IdentificationStep = ({ onComplete, onForeign }: IdentificationStep
               )}
             </>
           )}
-          <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" />
+          <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={handleFileChange} className="hidden" />
         </div>
 
         <button
@@ -145,6 +198,13 @@ export const IdentificationStep = ({ onComplete, onForeign }: IdentificationStep
             <Field label="Modèle" value={data.modele} onChange={v => setData({ ...data, modele: v })} placeholder="Model 3 / S / X / Y" />
           </div>
           <Field label="Propriétaire (titulaire)" value={data.proprietaire} onChange={v => setData({ ...data, proprietaire: v })} placeholder="Nom complet" />
+          <Field
+            label="Email du client (pour OTP)"
+            value={data.email || ""}
+            onChange={v => setData({ ...data, email: v })}
+            placeholder="client@email.com"
+            type="email"
+          />
 
           {status === "done" && (
             <div className="flex items-center gap-2 text-xs text-success font-mono animate-fade-in">
@@ -172,12 +232,14 @@ interface FieldProps {
   onChange: (v: string) => void;
   placeholder?: string;
   mono?: boolean;
+  type?: string;
 }
 
-const Field = ({ label, value, onChange, placeholder, mono }: FieldProps) => (
+const Field = ({ label, value, onChange, placeholder, mono, type = "text" }: FieldProps) => (
   <div className="space-y-1.5">
     <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</label>
     <input
+      type={type}
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}

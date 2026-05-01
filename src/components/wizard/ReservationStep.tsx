@@ -5,6 +5,7 @@ import { Calendar, Clock, Zap, Check, Battery } from "lucide-react";
 interface ReservationStepProps {
   vehicleInfo: string;
   onConfirm: () => void;
+  onBack?: () => void;
 }
 
 const TIME_SLOTS = [
@@ -19,7 +20,7 @@ const DURATIONS = [
   { label: "90 min", minutes: 90, kwh: 100 },
 ];
 
-export const ReservationStep = ({ vehicleInfo, onConfirm }: ReservationStepProps) => {
+export const ReservationStep = ({ vehicleInfo, onConfirm, onBack }: ReservationStepProps) => {
   const [station, setStation] = useState<Station | null>(null);
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [slot, setSlot] = useState<string | null>(null);
@@ -59,6 +60,14 @@ export const ReservationStep = ({ vehicleInfo, onConfirm }: ReservationStepProps
 
   return (
     <div className="space-y-8">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>←</span> Retour à la vérification
+        </button>
+      )}
       <div className="text-center space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-success/30">
           <Check className="w-4 h-4 text-success" />
