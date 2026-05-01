@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
+import { Pricing } from "@/components/Pricing";
+import { Support } from "@/components/Support";
 import { Footer } from "@/components/Footer";
 import { Stepper } from "@/components/wizard/Stepper";
 import { IdentificationStep, VehicleData } from "@/components/wizard/IdentificationStep";
@@ -61,6 +63,10 @@ const Index = () => {
     scrollToWizard();
   };
 
+  const clientEmail = vehicleData?.email || foreignData?.email || "client@email.com";
+  const clientPhone = foreignData?.telephone || "+216 22 345 678";
+  const ownerName = vehicleData?.proprietaire || "Client";
+
   const vehicleInfo = vehicleData
     ? `${vehicleData.marque} ${vehicleData.modele} · ${vehicleData.immatriculation}`
     : foreignData
@@ -68,7 +74,7 @@ const Index = () => {
     : "Véhicule vérifié";
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div id="top" className="min-h-screen flex flex-col">
       <Navbar onStart={startFlow} />
 
       <main className="flex-1">
@@ -76,8 +82,10 @@ const Index = () => {
 
         <HowItWorks />
 
+        <Pricing />
+
         {/* Wizard */}
-        <section ref={wizardRef} id="reservation" className="py-20 relative scroll-mt-20">
+        <section ref={wizardRef} id="stations" className="py-20 relative scroll-mt-20">
           <div className="absolute inset-0 grid-bg opacity-20" />
           <div className="container mx-auto px-6 relative">
             <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
@@ -106,21 +114,25 @@ const Index = () => {
               )}
               {currentStep === 1 && (
                 <VerificationStep
-                  defaultEmail={foreignData?.email || "mohamed.benali@gmail.com"}
-                  defaultPhone={foreignData?.telephone || "+216 22 345 678"}
-                  ownerName={vehicleData?.proprietaire || "Client"}
+                  defaultEmail={clientEmail}
+                  defaultPhone={clientPhone}
+                  ownerName={ownerName}
                   onComplete={handleVerificationComplete}
+                  onBack={() => setCurrentStep(0)}
                 />
               )}
               {currentStep === 2 && (
                 <ReservationStep
                   vehicleInfo={vehicleInfo}
                   onConfirm={startFlow}
+                  onBack={() => setCurrentStep(1)}
                 />
               )}
             </div>
           </div>
         </section>
+
+        <Support />
       </main>
 
       <Footer />
