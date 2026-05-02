@@ -1,1 +1,4 @@
 project_id = "ynpiifssziixmihfefxe"
+
+[functions.ocr-carte-grise]
+verify_jwt = false
