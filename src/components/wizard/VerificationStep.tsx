@@ -288,3 +288,24 @@ const ChannelOption = ({ active, onClick, icon: Icon, label, value, badge, hint 
     </div>
   </button>
 );
+
+interface EditableFieldProps {
+  type: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  label: string;
+}
+
+const EditableField = ({ type, value, onChange, placeholder, label }: EditableFieldProps) => (
+  <div className="space-y-1.5 pl-14 -mt-2 animate-fade-in">
+    <label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full px-4 py-2.5 rounded-lg bg-input/60 border border-border focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40 text-sm"
+    />
+  </div>
+);
