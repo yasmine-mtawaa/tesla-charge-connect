@@ -15,8 +15,8 @@ type Phase = "select" | "code" | "verified";
 const SENDER_EMAIL = "ineshajali1910@gmail.com";
 
 export const VerificationStep = ({
-  defaultEmail = "client@tesla.com",
-  defaultPhone = "+216 XX XXX XXX",
+  defaultEmail = "",
+  defaultPhone = "",
   ownerName = "Titulaire",
   onComplete,
   onBack,
@@ -27,6 +27,8 @@ export const VerificationStep = ({
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
+  const [phone, setPhone] = useState(defaultPhone);
+  const [email, setEmail] = useState(defaultEmail);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const [countdown, setCountdown] = useState(0);
 
