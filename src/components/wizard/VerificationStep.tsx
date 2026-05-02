@@ -75,8 +75,9 @@ export const VerificationStep = ({
     }, 1500);
   };
 
-  const target = channel === "email" ? defaultEmail : defaultPhone;
+  const target = channel === "email" ? email : phone;
   const channelLabel = channel === "email" ? "email" : channel === "sms" ? "SMS" : "WhatsApp";
+  const canSend = channel === "email" ? /\S+@\S+\.\S+/.test(email) : phone.trim().length >= 6;
 
   if (phase === "verified") {
     return (
