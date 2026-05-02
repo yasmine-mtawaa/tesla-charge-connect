@@ -42,7 +42,7 @@ export const IdentificationStep = ({ onComplete, onForeign, onBack }: Identifica
       marque: "Tesla",
       modele: "Model 3 Long Range",
       proprietaire: "Mohamed Ben Ali",
-      email: prev.email || "mohamed.benali@gmail.com",
+      email: prev.email,
     }));
   };
 

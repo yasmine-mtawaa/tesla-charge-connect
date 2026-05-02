@@ -12,11 +12,11 @@ interface VerificationStepProps {
 type Channel = "email" | "sms" | "whatsapp";
 type Phase = "select" | "code" | "verified";
 
-const SENDER_EMAIL = "yassmine.mtawa@gmail.com";
+const SENDER_EMAIL = "ineshajali1910@gmail.com";
 
 export const VerificationStep = ({
-  defaultEmail = "client@tesla.com",
-  defaultPhone = "+216 XX XXX XXX",
+  defaultEmail = "",
+  defaultPhone = "",
   ownerName = "Titulaire",
   onComplete,
   onBack,
@@ -27,6 +27,8 @@ export const VerificationStep = ({
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
+  const [phone, setPhone] = useState(defaultPhone);
+  const [email, setEmail] = useState(defaultEmail);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const [countdown, setCountdown] = useState(0);
 
@@ -73,8 +75,9 @@ export const VerificationStep = ({
     }, 1500);
   };
 
-  const target = channel === "email" ? defaultEmail : defaultPhone;
+  const target = channel === "email" ? email : phone;
   const channelLabel = channel === "email" ? "email" : channel === "sms" ? "SMS" : "WhatsApp";
+  const canSend = channel === "email" ? /\S+@\S+\.\S+/.test(email) : phone.trim().length >= 6;
 
   if (phase === "verified") {
     return (
@@ -122,28 +125,57 @@ export const VerificationStep = ({
             onClick={() => setChannel("email")}
             icon={Mail}
             label="Email"
-            value={defaultEmail}
+            value={email || "Saisir l'email du client"}
             badge="Recommandé"
             hint={`Envoyé depuis ${SENDER_EMAIL}`}
           />
+          {channel === "email" && (
+            <EditableField
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="client@email.com"
+              label="Email du client"
+            />
+          )}
+
           <ChannelOption
             active={channel === "sms"}
             onClick={() => setChannel("sms")}
             icon={Phone}
             label="SMS"
-            value={defaultPhone}
+            value={phone || "Saisir le numéro de téléphone"}
           />
+          {channel === "sms" && (
+            <EditableField
+              type="tel"
+              value={phone}
+              onChange={setPhone}
+              placeholder="+216 XX XXX XXX"
+              label="Numéro de téléphone"
+            />
+          )}
+
           <ChannelOption
             active={channel === "whatsapp"}
             onClick={() => setChannel("whatsapp")}
             icon={MessageCircle}
             label="WhatsApp"
-            value={defaultPhone}
+            value={phone || "Saisir le numéro WhatsApp"}
           />
+          {channel === "whatsapp" && (
+            <EditableField
+              type="tel"
+              value={phone}
+              onChange={setPhone}
+              placeholder="+216 XX XXX XXX"
+              label="Numéro WhatsApp"
+            />
+          )}
 
           <button
             onClick={sendCode}
-            disabled={sending}
+            disabled={sending || !canSend}
             className="w-full py-3.5 rounded-xl bg-gradient-electric text-primary-foreground font-semibold shadow-electric disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
           >
             {sending ? (
@@ -255,4 +287,25 @@ const ChannelOption = ({ active, onClick, icon: Icon, label, value, badge, hint 
       {active && <div className="w-full h-full rounded-full bg-primary-foreground scale-50" />}
     </div>
   </button>
+);
+
+interface EditableFieldProps {
+  type: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  label: string;
+}
+
+const EditableField = ({ type, value, onChange, placeholder, label }: EditableFieldProps) => (
+  <div className="space-y-1.5 pl-14 -mt-2 animate-fade-in">
+    <label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full px-4 py-2.5 rounded-lg bg-input/60 border border-border focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40 text-sm"
+    />
+  </div>
 );
