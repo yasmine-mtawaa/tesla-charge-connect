@@ -125,28 +125,57 @@ export const VerificationStep = ({
             onClick={() => setChannel("email")}
             icon={Mail}
             label="Email"
-            value={defaultEmail}
+            value={email || "Saisir l'email du client"}
             badge="Recommandé"
             hint={`Envoyé depuis ${SENDER_EMAIL}`}
           />
+          {channel === "email" && (
+            <EditableField
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="client@email.com"
+              label="Email du client"
+            />
+          )}
+
           <ChannelOption
             active={channel === "sms"}
             onClick={() => setChannel("sms")}
             icon={Phone}
             label="SMS"
-            value={defaultPhone}
+            value={phone || "Saisir le numéro de téléphone"}
           />
+          {channel === "sms" && (
+            <EditableField
+              type="tel"
+              value={phone}
+              onChange={setPhone}
+              placeholder="+216 XX XXX XXX"
+              label="Numéro de téléphone"
+            />
+          )}
+
           <ChannelOption
             active={channel === "whatsapp"}
             onClick={() => setChannel("whatsapp")}
             icon={MessageCircle}
             label="WhatsApp"
-            value={defaultPhone}
+            value={phone || "Saisir le numéro WhatsApp"}
           />
+          {channel === "whatsapp" && (
+            <EditableField
+              type="tel"
+              value={phone}
+              onChange={setPhone}
+              placeholder="+216 XX XXX XXX"
+              label="Numéro WhatsApp"
+            />
+          )}
 
           <button
             onClick={sendCode}
-            disabled={sending}
+            disabled={sending || !canSend}
             className="w-full py-3.5 rounded-xl bg-gradient-electric text-primary-foreground font-semibold shadow-electric disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
           >
             {sending ? (
