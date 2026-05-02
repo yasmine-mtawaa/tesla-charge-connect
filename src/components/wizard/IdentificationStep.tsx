@@ -152,21 +152,21 @@ export const IdentificationStep = ({ onComplete, onForeign, onBack }: Identifica
                 <Upload className="w-6 h-6 text-primary-glow" />
               </div>
               <div>
-                <div className="font-medium">Importer une photo</div>
-                <div className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF · max 10 MB</div>
+                <div className="font-medium">Scanner une carte grise</div>
+                <div className="text-xs text-muted-foreground mt-1">JPG, PNG · max 10 Mo · OCR par IA Gemini</div>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 w-full mt-2">
                 <button
                   onClick={() => fileRef.current?.click()}
                   className="flex-1 text-xs font-mono uppercase tracking-wider bg-gradient-electric text-primary-foreground rounded-full px-4 py-2 shadow-electric hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
                 >
-                  <ImageIcon className="w-3.5 h-3.5" /> Choisir un fichier
+                  <Sparkles className="w-3.5 h-3.5" /> Scanner réellement
                 </button>
                 <button
                   onClick={useDemoSample}
-                  className="flex-1 text-xs font-mono uppercase tracking-wider text-primary-glow border border-primary/30 rounded-full px-4 py-2 hover:bg-primary/5"
+                  className="flex-1 text-xs font-mono uppercase tracking-wider text-primary-glow border border-primary/30 rounded-full px-4 py-2 hover:bg-primary/5 flex items-center justify-center gap-2"
                 >
-                  Démo OCR
+                  <ImageIcon className="w-3.5 h-3.5" /> Démo
                 </button>
               </div>
             </div>
