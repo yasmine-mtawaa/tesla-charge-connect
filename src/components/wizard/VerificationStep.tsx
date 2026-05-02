@@ -12,7 +12,7 @@ interface VerificationStepProps {
 type Channel = "email" | "sms" | "whatsapp";
 type Phase = "select" | "code" | "verified";
 
-const SENDER_EMAIL = "yassmine.mtawa@gmail.com";
+const SENDER_EMAIL = "ineshajali1910@gmail.com";
 
 export const VerificationStep = ({
   defaultEmail = "client@tesla.com",
