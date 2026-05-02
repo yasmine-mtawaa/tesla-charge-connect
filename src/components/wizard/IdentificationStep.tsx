@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
-import { Upload, Loader2, CheckCircle2, Globe, ArrowLeft, ImageIcon, X } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, Globe, ArrowLeft, ImageIcon, X, Sparkles } from "lucide-react";
 import carteGriseImg from "@/assets/carte-grise-sample.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface IdentificationStepProps {
   onComplete: (data: VehicleData) => void;
@@ -32,30 +34,79 @@ export const IdentificationStep = ({ onComplete, onForeign, onBack }: Identifica
   });
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const runOCR = (imageSrc: string) => {
-    setUploadedImage(imageSrc);
+  const fillDemoData = () => {
+    setData(prev => ({
+      ...prev,
+      immatriculation: "245 TUN 7821",
+      numChassis: "5YJ3E1EA8KF317452",
+      marque: "Tesla",
+      modele: "Model 3 Long Range",
+      proprietaire: "Mohamed Ben Ali",
+      email: prev.email || "mohamed.benali@gmail.com",
+    }));
+  };
+
+  // Démo : animation de scan + données pré-remplies (toujours fonctionnelle, zéro backend)
+  const useDemoSample = () => {
+    setUploadedImage(carteGriseImg);
     setStatus("scanning");
-    setTimeout(() => setStatus("extracting"), 1800);
-    setTimeout(() => {
+    window.setTimeout(() => setStatus("extracting"), 1400);
+    window.setTimeout(() => {
+      fillDemoData();
       setStatus("done");
+      toast.success("Démo OCR terminée", { description: "Données d'exemple chargées." });
+    }, 2800);
+  };
+
+  // OCR réel : envoie l'image à l'edge function (Gemini Vision)
+  const runRealOCR = async (imageDataUrl: string) => {
+    setUploadedImage(imageDataUrl);
+    setStatus("scanning");
+    window.setTimeout(() => setStatus("extracting"), 600);
+    try {
+      const { data: resp, error } = await supabase.functions.invoke("ocr-carte-grise", {
+        body: { imageBase64: imageDataUrl },
+      });
+      if (error) throw error;
+      if (!resp?.success || !resp?.data) {
+        throw new Error(resp?.error || "Extraction impossible");
+      }
+      const d = resp.data;
       setData(prev => ({
         ...prev,
-        immatriculation: "245 TUN 7821",
-        numChassis: "5YJ3E1EA8KF317452",
-        marque: "Tesla",
-        modele: "Model 3 Long Range",
-        proprietaire: "Mohamed Ben Ali",
-        email: prev.email || "mohamed.benali@gmail.com",
+        immatriculation: d.immatriculation || prev.immatriculation,
+        numChassis: d.numChassis || prev.numChassis,
+        marque: d.marque || prev.marque,
+        modele: d.modele || prev.modele,
+        proprietaire: d.proprietaire || prev.proprietaire,
+        email: prev.email,
       }));
-    }, 3500);
+      setStatus("done");
+      const conf = typeof d.confidence === "number" ? Math.round(d.confidence * 100) : null;
+      toast.success("Carte grise scannée", {
+        description: conf !== null ? `Confiance OCR : ${conf}%` : "Données extraites avec succès.",
+      });
+    } catch (err: any) {
+      console.error("OCR error:", err);
+      setStatus("idle");
+      setUploadedImage(null);
+      toast.error("Échec du scan OCR", {
+        description: err?.message || "Vérifiez l'image et réessayez, ou utilisez la démo.",
+      });
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Fichier trop lourd (max 10 Mo)");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = ev => {
-      runOCR((ev.target?.result as string) || carteGriseImg);
+      const src = (ev.target?.result as string) || carteGriseImg;
+      runRealOCR(src);
     };
     reader.readAsDataURL(file);
   };
@@ -65,8 +116,6 @@ export const IdentificationStep = ({ onComplete, onForeign, onBack }: Identifica
     setUploadedImage(null);
     if (fileRef.current) fileRef.current.value = "";
   };
-
-  const useDemoSample = () => runOCR(carteGriseImg);
 
   const canSubmit = data.immatriculation && data.numChassis && data.modele && data.email;
   const displayImage = uploadedImage || carteGriseImg;
